@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riggie Voice - 音声埋め込み＆ファイル生成ツール</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --border-color: #334155;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 650px;
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-top: 0;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .description {
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.95rem;
+      margin-bottom: 30px;
+      line-height: 1.5;
+    }
+
+    .file-input-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+
+    .file-dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      background-color: rgba(15, 23, 42, 0.3);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .file-dropzone:hover {
+      border-color: var(--primary);
+      background-color: rgba(56, 189, 248, 0.05);
+    }
+
+    .file-dropzone input[type="file"] {
+      display: none;
+    }
+
+    .file-name {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      background-color: var(--primary);
+      color: var(--bg-color);
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-top: 30px;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      background-color: var(--border-color);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .result-container {
+      margin-top: 35px;
+      display: none;
+      border-top: 1px solid var(--border-color);
+      padding-top: 25px;
+    }
+
+    .result-header {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .download-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 25px;
+    }
+
+    .btn-download {
+      background-color: var(--accent);
+      color: var(--bg-color);
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      text-align: center;
+    }
+
+    .btn-download:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .step-list {
+      background-color: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px 20px 20px 35px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .step-list li {
+      margin-bottom: 8px;
+    }
+
+    .step-list strong {
+      color: var(--text-color);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Riggie Voice 音声埋め込みツール</h1>
+    <div class="description">
+      セキュリティ制限を回避するため、音声ファイルをアプリ本体に直接埋め込んだHTMLファイルを生成します。
+    </div>
+
+    <!-- 吠える声 -->
+    <div class="file-input-group">
+      <label>1. 吠える声の音声ファイル (bark.m4a または オッオッ.m4a)</label>
+      <div class="file-dropzone" onclick="document.getElementById('file-bark').click()">
+        <span id="text-bark">ここをクリックしてファイルを選択</span>
+        <input type="file" id="file-bark" accept="audio/*">
+        <div id="name-bark" class="file-name"></div>
+      </div>
+    </div>
+
+    <!-- シー音 -->
+    <div class="file-input-group">
+      <label>2. シーの音声ファイル (shush.m4a または シー.m4a)</label>
+      <div class="file-dropzone" onclick="document.getElementById('file-shush').click()">
+        <span id="text-shush">ここをクリックしてファイルを選択</span>
+        <input type="file" id="file-shush" accept="audio/*">
+        <div id="name-shush" class="file-name"></div>
+      </div>
+    </div>
+
+    <button id="btn-generate" class="btn" disabled>埋め込みHTMLを生成する</button>
+
+    <div id="result-area" class="result-container">
+      <div class="result-header">🎉 埋め込みHTMLの生成が完了しました！</div>
+      
+      <div class="download-buttons">
+        <button id="btn-dl-index" class="btn-download">① index.html をダウンロード</button>
+        <button id="btn-dl-test" class="btn-download">② test.html をダウンロード</button>
+      </div>
+
+      <ol class="step-list">
+        <li><strong>「① index.html をダウンロード」</strong>ボタンを押し、ダウンロードされたファイルを現在のフォルダ <strong>(riggievoice)</strong> に上書き保存（または移動）してください。</li>
+        <li><strong>「② test.html をダウンロード」</strong>ボタンを押し、同じようにフォルダに上書き保存してください。</li>
+        <li>上書き後、新しい <strong>index.html</strong> をダブルクリックして開き、音が出るかご確認ください。</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- index.htmlのテンプレート -->
+  <script type="text/plain" id="index-template"><!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riggie Sealion Voice - リギーの声と表情</title>
+  <meta name="description" content="アシカのリギー（Riggie Sealion）の吠える声とシーっとする顔を再生できるインタラクティブアプリです。連続吠え機能搭載。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="main-card">
+      <!-- エラー表示バルーン -->
+      <div id="error-display" class="error-display"></div>
+
+      <!-- スケルトン/ローディングインジケーター -->
+      <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>リギーを準備中...</p>
+      </div>
+
+      <h1>Riggie Sealion</h1>
+      <p class="subtitle">〜吠える声とシーっとする顔〜</p>
+
+      <!-- アシカ画像表示エリア -->
+      <div id="sealion-viewer-root"></div>
+
+      <!-- コントロールボタンエリア -->
+      <div id="control-panel-root"></div>
+    </div>
+  </div>
+
+  <script>
+const BARK_BASE64 = "[[BARK_BASE64]]";
+const SHUSH_BASE64 = "[[SHUSH_BASE64]]";
+
+const RiggieApp = {};
+
+// AudioPlayer
+RiggieApp.AudioPlayer = class AudioPlayer {
+  constructor(settings, onError) {
+    this.barkAudio = null;
+    this.shushAudio = null;
+    this.settings = settings;
+    this.onErrorCallback = onError;
+    this.initAudios();
+  }
+
+  initAudios() {
+    try {
+      this.barkAudio = new Audio('data:audio/mp4;base64,' + BARK_BASE64);
+      this.shushAudio = new Audio('data:audio/mp4;base64,' + SHUSH_BASE64);
+
+      this.barkAudio.onerror = () => {
+        this.handleError('吠える声の音声データ(Base64)の読み込みに失敗しました。');
+      };
+      this.shushAudio.onerror = () => {
+        this.handleError('シーの音声データ(Base64)の読み込みに失敗しました。');
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`音声の初期化中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  playBark() {
+    try {
+      if (!this.barkAudio) {
+        throw new Error('音声プレイヤーが初期化されていません。');
+      }
+      const clone = this.barkAudio.cloneNode(true);
+      clone.volume = this.settings.volume;
+      clone.playbackRate = this.settings.playbackRate;
+      
+      let trimTimer = null;
+
+      const stopTrigger = () => {
+        try {
+          clone.pause();
+          clone.remove();
+          if (trimTimer !== null) {
+            clearTimeout(trimTimer);
+          }
+        } catch (e) {
+          console.error('Failed to stop bark clone:', e);
+        }
+      };
+
+      clone.onended = stopTrigger;
+
+      const playPromise = clone.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          const duration = this.settings.barkDurationMs || 1200;
+          trimTimer = window.setTimeout(stopTrigger, duration);
+        }).catch((error) => {
+          console.error('Audio playback failed:', error);
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`吠える声の再生中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  playShush() {
+    try {
+      if (!this.shushAudio) {
+        throw new Error('音声プレイヤーが初期化されていません。');
+      }
+      const clone = this.shushAudio.cloneNode(true);
+      clone.volume = 1.0; 
+      clone.playbackRate = this.settings.playbackRate;
+
+      clone.onended = () => {
+        clone.remove();
+      };
+
+      const playPromise = clone.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error('Audio playback failed:', error);
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`シーの再生中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  stopShush() {
+  }
+
+  updateSettings(newSettings) {
+    this.settings = { ...this.settings, ...newSettings };
+  }
+
+  handleError(message) {
+    console.error(message);
+    if (this.onErrorCallback) {
+      this.onErrorCallback(message);
+    }
+  }
+};
+
+// SealionViewer
+RiggieApp.SealionViewer = class SealionViewer {
+  constructor(props) {
+    this.container = document.getElementById(props.elementId);
+    this.state = props.state;
+    this.render();
+  }
+
+  updateState(newState) {
+    if (this.state !== newState) {
+      this.state = newState;
+      this.render();
+    }
+  }
+
+  render() {
+    try {
+      if (!this.container) {
+        throw new Error('Viewer container element not found.');
+      }
+
+      let baseName = 'riggie_idle';
+      let stateLabel = 'リギー (通常)';
+      let animationClass = 'anim-idle';
+
+      if (this.state === 'barking') {
+        baseName = 'riggie_bark';
+        stateLabel = 'リギー (吠え声！)';
+        animationClass = 'anim-barking';
+      } else if (this.state === 'shushing') {
+        baseName = 'riggie_shush';
+        stateLabel = 'リギー (シーッ)';
+        animationClass = 'anim-shushing';
+      }
+
+      this.container.innerHTML = `
+        <div class="sealion-display ${animationClass}">
+          <img alt="${stateLabel}" class="sealion-image" id="sealion-img" />
+          <div class="sealion-status-bubble">${stateLabel}</div>
+        </div>
+      `;
+
+      const img = document.getElementById('sealion-img');
+      if (img) {
+        const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
+        let extIndex = 0;
+
+        const loadNext = () => {
+          if (extIndex < extensions.length) {
+            const ext = extensions[extIndex];
+            extIndex++;
+            img.src = `data/${baseName}${ext}`;
+          } else {
+            console.error(`Failed to load image with any supported extension: ${baseName}`);
+            if (this.container) {
+              this.container.innerHTML = `
+                <div class="error-container">
+                  <p>画像の読み込みに失敗しました。</p>
+                  <small>画像ファイル (data/${baseName}.png/.jpg/.webp) を配置してください。</small>
+                </div>
+              `;
+            }
+          }
+        };
+
+        img.onerror = loadNext;
+        loadNext();
+      }
+    } catch (error) {
+      console.error('Failed to render SealionViewer:', error);
+    }
+  }
+};
+
+// ControlPanel
+RiggieApp.ControlPanel = class ControlPanel {
+  constructor(props) {
+    this.props = props;
+    this.container = document.getElementById(props.elementId);
+    this.isContinuousActive = false;
+    this.render();
+  }
+
+  setContinuousState(active) {
+    this.isContinuousActive = active;
+    const btn = document.getElementById('btn-continuous');
+    if (btn) {
+      if (active) {
+        btn.classList.add('active');
+        btn.innerHTML = '連続吠え: ON <span class="indicator-pulse"></span>';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '連続吠え: OFF';
+      }
+    }
+  }
+
+  render() {
+    try {
+      if (!this.container) {
+        throw new Error('Control panel container element not found.');
+      }
+
+      this.container.innerHTML = `
+        <div class="control-buttons">
+          <button id="btn-bark" class="btn btn-primary">
+            <span class="btn-icon">🔊</span> 吠える (Bark)
+          </button>
+          
+          <button id="btn-shush" class="btn btn-secondary">
+            <span class="btn-icon">🤫</span> シーッ (Shush)
+          </button>
+          
+          <button id="btn-continuous" class="btn btn-accent">
+            連続吠え: OFF
+          </button>
+        </div>
+      `;
+
+      this.bindEvents();
+    } catch (error) {
+      console.error('Failed to render ControlPanel:', error);
+    }
+  }
+
+  bindEvents() {
+    const btnBark = document.getElementById('btn-bark');
+    const btnShush = document.getElementById('btn-shush');
+    const btnContinuous = document.getElementById('btn-continuous');
+
+    if (!btnBark || !btnShush || !btnContinuous) {
+      return;
+    }
+
+    const triggerBarkStart = (e) => {
+      e.preventDefault();
+      this.props.onBarkStart();
+    };
+    const triggerBarkEnd = (e) => {
+      e.preventDefault();
+      this.props.onBarkEnd();
+    };
+
+    btnBark.addEventListener('mousedown', triggerBarkStart);
+    btnBark.addEventListener('mouseup', triggerBarkEnd);
+    btnBark.addEventListener('mouseleave', triggerBarkEnd);
+
+    btnBark.addEventListener('touchstart', triggerBarkStart, { passive: false });
+    btnBark.addEventListener('touchend', triggerBarkEnd, { passive: false });
+
+    const triggerShushStart = (e) => {
+      e.preventDefault();
+      this.props.onShushStart();
+    };
+    const triggerShushEnd = (e) => {
+      e.preventDefault();
+      this.props.onShushEnd();
+    };
+
+    btnShush.addEventListener('mousedown', triggerShushStart);
+    btnShush.addEventListener('mouseup', triggerShushEnd);
+    btnShush.addEventListener('mouseleave', triggerShushEnd);
+
+    btnShush.addEventListener('touchstart', triggerShushStart, { passive: false });
+    btnShush.addEventListener('touchend', triggerShushEnd, { passive: false });
+
+    btnContinuous.addEventListener('click', () => {
+      this.isContinuousActive = !this.isContinuousActive;
+      this.setContinuousState(this.isContinuousActive);
+      this.props.onContinuousToggle(this.isContinuousActive);
+    });
+  }
+};
+
+// App
+RiggieApp.App = class App {
+  constructor() {
+    this.viewer = null;
+    this.controlPanel = null;
+    this.audioPlayer = null;
+    this.settings = {
+      playbackRate: 1.0,
+      volume: 0.8,
+      barkIntervalMs: 400,
+      barkDurationMs: 1200
+    };
+    this.continuousIntervalId = null;
+    this.activeActionCount = 0;
+  }
+
+  async init() {
+    try {
+      this.showLoading(true);
+      await this.loadSettings();
+
+      this.viewer = new RiggieApp.SealionViewer({
+        state: 'idle',
+        elementId: 'sealion-viewer-root'
+      });
+
+      this.audioPlayer = new RiggieApp.AudioPlayer(this.settings, (msg) => this.showErrorMessage(msg));
+
+      this.controlPanel = new RiggieApp.ControlPanel({
+        elementId: 'control-panel-root',
+        onBarkStart: () => this.handleBarkStart(),
+        onBarkEnd: () => this.handleBarkEnd(),
+        onShushStart: () => this.handleShushStart(),
+        onShushEnd: () => this.handleShushEnd(),
+        onContinuousToggle: (active) => this.handleContinuousToggle(active)
+      });
+
+      this.showLoading(false);
+    } catch (error) {
+      this.showLoading(false);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.showErrorMessage(`アプリケーションの初期化に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  async loadSettings() {
+    if (window.location.protocol === 'file:') {
+      console.log('Running on file:// protocol. Skipping settings fetch.');
+      return;
+    }
+    try {
+      const response = await fetch('data/mock_settings.json');
+      if (!response.ok) {
+        throw new Error(`Settings response status: ${response.status}`);
+      }
+      const data = await response.json();
+      this.settings = { ...this.settings, ...data };
+    } catch (error) {
+      console.warn('Failed to load settings from JSON. Using default settings.', error);
+    }
+  }
+
+  handleBarkStart() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        this.stopContinuousBarking();
+        if (this.controlPanel) {
+          this.controlPanel.setContinuousState(false);
+        }
+      }
+
+      this.activeActionCount++;
+      if (this.viewer) {
+        this.viewer.updateState('barking');
+      }
+      if (this.audioPlayer) {
+        this.audioPlayer.playBark();
+      }
+    } catch (error) {
+      console.error('Error during bark start:', error);
+    }
+  }
+
+  handleBarkEnd() {
+    try {
+      this.activeActionCount = Math.max(0, this.activeActionCount - 1);
+      if (this.activeActionCount === 0 && this.continuousIntervalId === null) {
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+        }
+      }
+    } catch (error) {
+      console.error('Error during bark end:', error);
+    }
+  }
+
+  handleShushStart() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        this.stopContinuousBarking();
+        if (this.controlPanel) {
+          this.controlPanel.setContinuousState(false);
+        }
+      }
+
+      this.activeActionCount++;
+      if (this.viewer) {
+        this.viewer.updateState('shushing');
+      }
+      if (this.audioPlayer) {
+        this.audioPlayer.playShush();
+      }
+    } catch (error) {
+      console.error('Error during shush start:', error);
+    }
+  }
+
+  handleShushEnd() {
+    try {
+      this.activeActionCount = Math.max(0, this.activeActionCount - 1);
+      if (this.audioPlayer) {
+        this.audioPlayer.stopShush();
+      }
+      if (this.activeActionCount === 0 && this.continuousIntervalId === null) {
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+        }
+      }
+    } catch (error) {
+      console.error('Error during shush end:', error);
+    }
+  }
+
+  handleContinuousToggle(active) {
+    if (active) {
+      this.startContinuousBarking();
+    } else {
+      this.stopContinuousBarking();
+    }
+  }
+
+  startContinuousBarking() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        return;
+      }
+
+      if (this.viewer) {
+        this.viewer.updateState('barking');
+      }
+
+      if (this.audioPlayer) {
+        this.audioPlayer.playBark();
+      }
+
+      this.continuousIntervalId = window.setInterval(() => {
+        if (this.audioPlayer) {
+          this.audioPlayer.playBark();
+        }
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+          setTimeout(() => {
+            if (this.continuousIntervalId !== null && this.viewer) {
+              this.viewer.updateState('barking');
+            }
+          }, 50);
+        }
+      }, this.settings.barkIntervalMs);
+    } catch (error) {
+      console.error('Error during continuous barking start:', error);
+    }
+  }
+
+  stopContinuousBarking() {
+    if (this.continuousIntervalId !== null) {
+      clearInterval(this.continuousIntervalId);
+      this.continuousIntervalId = null;
+    }
+    if (this.viewer) {
+      this.viewer.updateState('idle');
+    }
+  }
+
+  showLoading(show) {
+    const loader = document.getElementById('loading-indicator');
+    if (loader) {
+      loader.style.display = show ? 'flex' : 'none';
+    }
+  }
+
+  showErrorMessage(message) {
+    const errEl = document.getElementById('error-display');
+    if (errEl) {
+      errEl.innerText = message;
+      errEl.style.display = 'block';
+      setTimeout(() => {
+        errEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+};
+
+const bootstrapApp = () => {
+  try {
+    const app = new RiggieApp.App();
+    app.init().catch((err) => {
+      console.error('Application bootstrap failed:', err);
+    });
+  } catch (err) {
+    console.error('Failed to create App instance:', err);
+  }
+};
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', bootstrapApp);
+} else {
+  bootstrapApp();
+}
+  </script>
+</body>
+</html></script>
+
+  <!-- test.htmlのテンプレート -->
+  <script type="text/plain" id="test-template"><!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Riggie App Unit Tests</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; }
+    h1 { color: #38bdf8; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
+    .test-case { margin: 10px 0; padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+    .pass { background: #064e3b; border-left: 5px solid #10b981; color: #a7f3d0; }
+    .fail { background: #7f1d1d; border-left: 5px solid #ef4444; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <h1>Riggie App ユニットテスト</h1>
+  <div id="test-results"></div>
+  
+  <!-- テスト用のDOMモック -->
+  <div id="sealion-viewer-root" style="display:none;"></div>
+  <div id="control-panel-root" style="display:none;"></div>
+  <div id="loading-indicator" style="display:none;"></div>
+  <div id="error-display" style="display:none;"></div>
+
+  <script>
+const BARK_BASE64 = "[[BARK_BASE64]]";
+const SHUSH_BASE64 = "[[SHUSH_BASE64]]";
+
+const RiggieApp = {};
+
+// AudioPlayer
+RiggieApp.AudioPlayer = class AudioPlayer {
+  constructor(settings, onError) {
+    this.barkAudio = null;
+    this.shushAudio = null;
+    this.settings = settings;
+    this.onErrorCallback = onError;
+    this.initAudios();
+  }
+
+  initAudios() {
+    try {
+      this.barkAudio = new Audio('data:audio/mp4;base64,' + BARK_BASE64);
+      this.shushAudio = new Audio('data:audio/mp4;base64,' + SHUSH_BASE64);
+
+      this.barkAudio.onerror = () => {
+        this.handleError('吠える声の音声データ(Base64)の読み込みに失敗しました。');
+      };
+      this.shushAudio.onerror = () => {
+        this.handleError('シーの音声データ(Base64)の読み込みに失敗しました。');
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`音声の初期化中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  playBark() {
+    try {
+      if (!this.barkAudio) {
+        throw new Error('音声プレイヤーが初期化されていません。');
+      }
+      const clone = this.barkAudio.cloneNode(true);
+      clone.volume = this.settings.volume;
+      clone.playbackRate = this.settings.playbackRate;
+      
+      let trimTimer = null;
+
+      const stopTrigger = () => {
+        try {
+          clone.pause();
+          clone.remove();
+          if (trimTimer !== null) {
+            clearTimeout(trimTimer);
+          }
+        } catch (e) {
+          console.error('Failed to stop bark clone:', e);
+        }
+      };
+
+      clone.onended = stopTrigger;
+
+      const playPromise = clone.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          const duration = this.settings.barkDurationMs || 1200;
+          trimTimer = window.setTimeout(stopTrigger, duration);
+        }).catch((error) => {
+          console.error('Audio playback failed:', error);
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`吠える声の再生中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  playShush() {
+    try {
+      if (!this.shushAudio) {
+        throw new Error('音声プレイヤーが初期化されていません。');
+      }
+      const clone = this.shushAudio.cloneNode(true);
+      clone.volume = 1.0; 
+      clone.playbackRate = this.settings.playbackRate;
+
+      clone.onended = () => {
+        clone.remove();
+      };
+
+      const playPromise = clone.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error('Audio playback failed:', error);
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.handleError(`シーの再生中にエラーが発生しました: ${errorMessage}`);
+    }
+  }
+
+  stopShush() {
+  }
+
+  updateSettings(newSettings) {
+    this.settings = { ...this.settings, ...newSettings };
+  }
+
+  handleError(message) {
+    console.error(message);
+    if (this.onErrorCallback) {
+      this.onErrorCallback(message);
+    }
+  }
+};
+
+// SealionViewer
+RiggieApp.SealionViewer = class SealionViewer {
+  constructor(props) {
+    this.container = document.getElementById(props.elementId);
+    this.state = props.state;
+    this.render();
+  }
+
+  updateState(newState) {
+    if (this.state !== newState) {
+      this.state = newState;
+      this.render();
+    }
+  }
+
+  render() {
+    try {
+      if (!this.container) {
+        throw new Error('Viewer container element not found.');
+      }
+
+      let baseName = 'riggie_idle';
+      let stateLabel = 'リギー (通常)';
+      let animationClass = 'anim-idle';
+
+      if (this.state === 'barking') {
+        baseName = 'riggie_bark';
+        stateLabel = 'リギー (吠え声！)';
+        animationClass = 'anim-barking';
+      } else if (this.state === 'shushing') {
+        baseName = 'riggie_shush';
+        stateLabel = 'リギー (シーッ)';
+        animationClass = 'anim-shushing';
+      }
+
+      this.container.innerHTML = `
+        <div class="sealion-display ${animationClass}">
+          <img alt="${stateLabel}" class="sealion-image" id="sealion-img" />
+          <div class="sealion-status-bubble">${stateLabel}</div>
+        </div>
+      `;
+
+      const img = document.getElementById('sealion-img');
+      if (img) {
+        const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
+        let extIndex = 0;
+
+        const loadNext = () => {
+          if (extIndex < extensions.length) {
+            const ext = extensions[extIndex];
+            extIndex++;
+            img.src = `data/${baseName}${ext}`;
+          } else {
+            console.error(`Failed to load image with any supported extension: ${baseName}`);
+            if (this.container) {
+              this.container.innerHTML = `
+                <div class="error-container">
+                  <p>画像の読み込みに失敗しました。</p>
+                  <small>画像ファイル (data/${baseName}.png/.jpg/.webp) を配置してください。</small>
+                </div>
+              `;
+            }
+          }
+        };
+
+        img.onerror = loadNext;
+        loadNext();
+      }
+    } catch (error) {
+      console.error('Failed to render SealionViewer:', error);
+    }
+  }
+};
+
+// ControlPanel
+RiggieApp.ControlPanel = class ControlPanel {
+  constructor(props) {
+    this.props = props;
+    this.container = document.getElementById(props.elementId);
+    this.isContinuousActive = false;
+    this.render();
+  }
+
+  setContinuousState(active) {
+    this.isContinuousActive = active;
+    const btn = document.getElementById('btn-continuous');
+    if (btn) {
+      if (active) {
+        btn.classList.add('active');
+        btn.innerHTML = '連続吠え: ON <span class="indicator-pulse"></span>';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '連続吠え: OFF';
+      }
+    }
+  }
+
+  render() {
+    try {
+      if (!this.container) {
+        throw new Error('Control panel container element not found.');
+      }
+
+      this.container.innerHTML = `
+        <div class="control-buttons">
+          <button id="btn-bark" class="btn btn-primary">
+            <span class="btn-icon">🔊</span> 吠える (Bark)
+          </button>
+          
+          <button id="btn-shush" class="btn btn-secondary">
+            <span class="btn-icon">🤫</span> シーッ (Shush)
+          </button>
+          
+          <button id="btn-continuous" class="btn btn-accent">
+            連続吠え: OFF
+          </button>
+        </div>
+      `;
+
+      this.bindEvents();
+    } catch (error) {
+      console.error('Failed to render ControlPanel:', error);
+    }
+  }
+
+  bindEvents() {
+    const btnBark = document.getElementById('btn-bark');
+    const btnShush = document.getElementById('btn-shush');
+    const btnContinuous = document.getElementById('btn-continuous');
+
+    if (!btnBark || !btnShush || !btnContinuous) {
+      return;
+    }
+
+    const triggerBarkStart = (e) => {
+      e.preventDefault();
+      this.props.onBarkStart();
+    };
+    const triggerBarkEnd = (e) => {
+      e.preventDefault();
+      this.props.onBarkEnd();
+    };
+
+    btnBark.addEventListener('mousedown', triggerBarkStart);
+    btnBark.addEventListener('mouseup', triggerBarkEnd);
+    btnBark.addEventListener('mouseleave', triggerBarkEnd);
+
+    btnBark.addEventListener('touchstart', triggerBarkStart, { passive: false });
+    btnBark.addEventListener('touchend', triggerBarkEnd, { passive: false });
+
+    const triggerShushStart = (e) => {
+      e.preventDefault();
+      this.props.onShushStart();
+    };
+    const triggerShushEnd = (e) => {
+      e.preventDefault();
+      this.props.onShushEnd();
+    };
+
+    btnShush.addEventListener('mousedown', triggerShushStart);
+    btnShush.addEventListener('mouseup', triggerShushEnd);
+    btnShush.addEventListener('mouseleave', triggerShushEnd);
+
+    btnShush.addEventListener('touchstart', triggerShushStart, { passive: false });
+    btnShush.addEventListener('touchend', triggerShushEnd, { passive: false });
+
+    btnContinuous.addEventListener('click', () => {
+      this.isContinuousActive = !this.isContinuousActive;
+      this.setContinuousState(this.isContinuousActive);
+      this.props.onContinuousToggle(this.isContinuousActive);
+    });
+  }
+};
+
+// App
+RiggieApp.App = class App {
+  constructor() {
+    this.viewer = null;
+    this.controlPanel = null;
+    this.audioPlayer = null;
+    this.settings = {
+      playbackRate: 1.0,
+      volume: 0.8,
+      barkIntervalMs: 400,
+      barkDurationMs: 1200
+    };
+    this.continuousIntervalId = null;
+    this.activeActionCount = 0;
+  }
+
+  async init() {
+    try {
+      this.showLoading(true);
+      await this.loadSettings();
+
+      this.viewer = new RiggieApp.SealionViewer({
+        state: 'idle',
+        elementId: 'sealion-viewer-root'
+      });
+
+      this.audioPlayer = new RiggieApp.AudioPlayer(this.settings, (msg) => this.showErrorMessage(msg));
+
+      this.controlPanel = new RiggieApp.ControlPanel({
+        elementId: 'control-panel-root',
+        onBarkStart: () => this.handleBarkStart(),
+        onBarkEnd: () => this.handleBarkEnd(),
+        onShushStart: () => this.handleShushStart(),
+        onShushEnd: () => this.handleShushEnd(),
+        onContinuousToggle: (active) => this.handleContinuousToggle(active)
+      });
+
+      this.showLoading(false);
+    } catch (error) {
+      this.showLoading(false);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.showErrorMessage(`アプリケーションの初期化に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  async loadSettings() {
+    if (window.location.protocol === 'file:') {
+      console.log('Running on file:// protocol. Skipping settings fetch.');
+      return;
+    }
+    try {
+      const response = await fetch('data/mock_settings.json');
+      if (!response.ok) {
+        throw new Error(`Settings response status: ${response.status}`);
+      }
+      const data = await response.json();
+      this.settings = { ...this.settings, ...data };
+    } catch (error) {
+      console.warn('Failed to load settings from JSON. Using default settings.', error);
+    }
+  }
+
+  handleBarkStart() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        this.stopContinuousBarking();
+        if (this.controlPanel) {
+          this.controlPanel.setContinuousState(false);
+        }
+      }
+
+      this.activeActionCount++;
+      if (this.viewer) {
+        this.viewer.updateState('barking');
+      }
+      if (this.audioPlayer) {
+        this.audioPlayer.playBark();
+      }
+    } catch (error) {
+      console.error('Error during bark start:', error);
+    }
+  }
+
+  handleBarkEnd() {
+    try {
+      this.activeActionCount = Math.max(0, this.activeActionCount - 1);
+      if (this.activeActionCount === 0 && this.continuousIntervalId === null) {
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+        }
+      }
+    } catch (error) {
+      console.error('Error during bark end:', error);
+    }
+  }
+
+  handleShushStart() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        this.stopContinuousBarking();
+        if (this.controlPanel) {
+          this.controlPanel.setContinuousState(false);
+        }
+      }
+
+      this.activeActionCount++;
+      if (this.viewer) {
+        this.viewer.updateState('shushing');
+      }
+      if (this.audioPlayer) {
+        this.audioPlayer.playShush();
+      }
+    } catch (error) {
+      console.error('Error during shush start:', error);
+    }
+  }
+
+  handleShushEnd() {
+    try {
+      this.activeActionCount = Math.max(0, this.activeActionCount - 1);
+      if (this.audioPlayer) {
+        this.audioPlayer.stopShush();
+      }
+      if (this.activeActionCount === 0 && this.continuousIntervalId === null) {
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+        }
+      }
+    } catch (error) {
+      console.error('Error during shush end:', error);
+    }
+  }
+
+  handleContinuousToggle(active) {
+    if (active) {
+      this.startContinuousBarking();
+    } else {
+      this.stopContinuousBarking();
+    }
+  }
+
+  startContinuousBarking() {
+    try {
+      if (this.continuousIntervalId !== null) {
+        return;
+      }
+
+      if (this.viewer) {
+        this.viewer.updateState('barking');
+      }
+
+      if (this.audioPlayer) {
+        this.audioPlayer.playBark();
+      }
+
+      this.continuousIntervalId = window.setInterval(() => {
+        if (this.audioPlayer) {
+          this.audioPlayer.playBark();
+        }
+        if (this.viewer) {
+          this.viewer.updateState('idle');
+          setTimeout(() => {
+            if (this.continuousIntervalId !== null && this.viewer) {
+              this.viewer.updateState('barking');
+            }
+          }, 50);
+        }
+      }, this.settings.barkIntervalMs);
+    } catch (error) {
+      console.error('Error during continuous barking start:', error);
+    }
+  }
+
+  stopContinuousBarking() {
+    if (this.continuousIntervalId !== null) {
+      clearInterval(this.continuousIntervalId);
+      this.continuousIntervalId = null;
+    }
+    if (this.viewer) {
+      this.viewer.updateState('idle');
+    }
+  }
+
+  showLoading(show) {
+    const loader = document.getElementById('loading-indicator');
+    if (loader) {
+      loader.style.display = show ? 'flex' : 'none';
+    }
+  }
+
+  showErrorMessage(message) {
+    const errEl = document.getElementById('error-display');
+    if (errEl) {
+      errEl.innerText = message;
+      errEl.style.display = 'block';
+      setTimeout(() => {
+        errEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+};
+
+namespace RiggieApp {
+  class TestSuite {
+    constructor() {
+      this.resultsEl = document.getElementById('test-results');
+    }
+
+    assert(desc, condition) {
+      const p = document.createElement('div');
+      p.className = `test-case ${condition ? 'pass' : 'fail'}`;
+      p.innerText = `${condition ? 'PASS' : 'FAIL'}: ${desc}`;
+      if (this.resultsEl) {
+        this.resultsEl.appendChild(p);
+      }
+      if (!condition) {
+        console.error(`Assertion failed: ${desc}`);
+      }
+    }
+  }
+
+  const runTests = () => {
+    const suite = new TestSuite();
+
+    try {
+      const mockSettings = {
+        playbackRate: 1.0,
+        volume: 0.8,
+        barkIntervalMs: 400
+      };
+      suite.assert('AudioSettings 型とプロパティの整合性', 
+        mockSettings.playbackRate === 1.0 && 
+        mockSettings.volume === 0.8 && 
+        mockSettings.barkIntervalMs === 400
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      suite.assert('AudioSettings テスト中のエラー: ' + msg, false);
+    }
+
+    try {
+      const viewer = new SealionViewer({
+        state: 'idle',
+        elementId: 'sealion-viewer-root'
+      });
+      const img = document.getElementById('sealion-img');
+      suite.assert('SealionViewer 初期状態が idle であること', img !== null && img.src.includes('riggie_idle.png'));
+
+      viewer.updateState('barking');
+      const imgBark = document.getElementById('sealion-img');
+      suite.assert('SealionViewer 状態変更 barking が反映されること', imgBark !== null && imgBark.src.includes('riggie_bark.png'));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      suite.assert('SealionViewer テスト中のエラー: ' + msg, false);
+    }
+
+    try {
+      const settings = { playbackRate: 1.0, volume: 0.8, barkIntervalMs: 400 };
+      const player = new AudioPlayer(settings, (msg) => {});
+      suite.assert('AudioPlayer が正常にインスタンス化できること', player !== null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      suite.assert('AudioPlayer テスト中のエラー: ' + msg, false);
+    }
+  };
+
+  if (document.readyState === 'complete') {
+    runTests();
+  } else {
+    window.addEventListener('load', runTests);
+  }
+}
+  </script>
+</body>
+</html></script>
+
+  <script>
+    const fileBark = document.getElementById('file-bark');
+    const fileShush = document.getElementById('file-shush');
+    const btnGenerate = document.getElementById('btn-generate');
+    const resultArea = document.getElementById('result-area');
+    
+    const btnDlIndex = document.getElementById('btn-dl-index');
+    const btnDlTest = document.getElementById('btn-dl-test');
+
+    let barkData = null;
+    let shushData = null;
+
+    fileBark.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('name-bark').innerText = `選択済み: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        readFileAsBase64(file, (base64) => {
+          barkData = base64;
+          checkReady();
+        });
+      }
+    });
+
+    fileShush.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('name-shush').innerText = `選択済み: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        readFileAsBase64(file, (base64) => {
+          shushData = base64;
+          checkReady();
+        });
+      }
+    });
+
+    function readFileAsBase64(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const result = e.target.result;
+        const base64Data = result.split(',')[1];
+        callback(base64Data);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function checkReady() {
+      if (barkData && shushData) {
+        btnGenerate.disabled = false;
+      }
+    }
+
+    btnGenerate.addEventListener('click', () => {
+      if (!barkData || !shushData) return;
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    function downloadFile(content, fileName) {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    btnDlIndex.addEventListener('click', () => {
+      const template = document.getElementById('index-template').textContent;
+      const finalHtml = template
+        .replace('[[BARK_BASE64]]', barkData)
+        .replace('[[SHUSH_BASE64]]', shushData);
+      downloadFile(finalHtml, 'index.html');
+    });
+
+    btnDlTest.addEventListener('click', () => {
+      const template = document.getElementById('test-template').textContent;
+      const finalHtml = template
+        .replace('[[BARK_BASE64]]', barkData)
+        .replace('[[SHUSH_BASE64]]', shushData);
+      downloadFile(finalHtml, 'test.html');
+    });
+  </script>
+</body>
+</html>

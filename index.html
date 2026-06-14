@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riggie Sealion Voice - リギーの声と表情</title>
+  <meta name="description" content="アシカのリギー（Riggie Sealion）の吠える声とシーっとする顔を再生できるインタラクティブアプリです。連続吠え機能搭載。">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // デバッグ用エラーキャッチャー
+    window.addEventListener('error', function(e) {
+      alert('【デバッグ】JSエラー検出:\n' + e.message + '\nファイル: ' + e.filename + '\n行: ' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      alert('【デバッグ】Promiseエラー検出:\n' + e.reason);
+    });
+  </script>
+</head>
+<body>
+  <div class="app-container">
+    <div class="main-card">
+      <!-- エラー表示バルーン -->
+      <div id="error-display" class="error-display"></div>
+
+      <!-- スケルトン/ローディングインジケーター -->
+      <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>リギーを準備中...</p>
+      </div>
+
+      <h1>Riggie Sealion</h1>
+      <p class="subtitle">〜吠える声とシーっとする顔〜</p>
+
+      <!-- アシカ画像表示エリア -->
+      <div id="sealion-viewer-root"></div>
+
+      <!-- コントロールボタンエリア -->
+      <div id="control-panel-root"></div>
+    </div>
+  </div>
+
+  <!-- 分割されたコンポーネントスクリプトを読み込み (キャッシュ回避のためのクエリ付き) -->
+  <script src="src/types.js?v=20260614_click_fix2"></script>
+  <script src="src/audio.js?v=20260614_click_fix2"></script>
+  <script src="src/components.js?v=20260614_click_fix2"></script>
+  <script src="src/app.js?v=20260614_click_fix2"></script>
+</body>
+</html>

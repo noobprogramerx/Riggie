@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Riggie App Unit Tests</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; }
+    h1 { color: #38bdf8; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
+    .test-case { margin: 10px 0; padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+    .pass { background: #064e3b; border-left: 5px solid #10b981; color: #a7f3d0; }
+    .fail { background: #7f1d1d; border-left: 5px solid #ef4444; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <h1>Riggie App ユニットテスト</h1>
+  <div id="test-results"></div>
+  
+  <!-- テスト用のDOMモック -->
+  <div id="sealion-viewer-root" style="display:none;"></div>
+  <div id="control-panel-root" style="display:none;"></div>
+  <div id="loading-indicator" style="display:none;"></div>
+  <div id="error-display" style="display:none;"></div>
+
+  <!-- 分割されたコンポーネントスクリプトを読み込み (CORS/オフライン制約を完全回避) -->
+  <script src="src/types.js?v=20260614_click_fix2"></script>
+  <script src="src/audio.js?v=20260614_click_fix2"></script>
+  <script src="src/components.js?v=20260614_click_fix2"></script>
+  <script src="src/app.js?v=20260614_click_fix2"></script>
+  <script src="src/test.js?v=20260614_click_fix2"></script>
+</body>
+</html>
